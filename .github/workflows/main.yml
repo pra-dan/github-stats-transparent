@@ -54,10 +54,27 @@ jobs:
         run: |
           git config --global user.name "github-stats[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
           git fetch origin
-          git checkout output 2>/dev/null || git checkout --orphan output
-          git rm -rf . || true
-          git checkout main -- generated/
-          git add generated/
+          
+          # Create or switch to the output branch safely
+          if git show-ref --verify --quiet refs/heads/output; then
+            git checkout output
+          else
+            git checkout --orphan output
+          fi
+          
+          # Clean old files (ignore errors)
+          rm -rf ./* || true
+          
+          # Copy newly generated content if present
+          if [ -d "generated" ]; then
+            cp -r generated/* .
+          else
+            echo "⚠️ No 'generated/' directory found. Skipping copy."
+          fi
+
+          git add .
           git commit -m "Update generated files" || echo "No changes to commit"
           git push origin output -f
+
